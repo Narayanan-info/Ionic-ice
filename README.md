@@ -28,7 +28,7 @@ The ionic-ice Vulnerability Scanner is a command-line tool designed to identify 
    ```
 3. Navigate to the project directory:
    ```sh
-   cd go-vulnerability-scanner
+   cd Ionic-ice
    ```
 4. Install dependencies:
    ```sh
