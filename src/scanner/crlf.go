@@ -86,8 +86,8 @@ func ScanCRLF(subdomains []string) {
 		var findings []string
 
 		for _, payload := range payloads {
-			// Construct the URL with the payload
-			testURL := fmt.Sprintf("%s?test=%s", baseURL, payload)
+			// Construct the URL with the payload directly
+			testURL := fmt.Sprintf("%s/%s", baseURL, payload)
 
 			// Perform the HTTP request
 			client := &http.Client{Timeout: 30 * time.Second} // Increase timeout to 30 seconds
@@ -108,9 +108,20 @@ func ScanCRLF(subdomains []string) {
 			}
 
 			// Check for injected headers or patterns in the response
-			if strings.Contains(string(body), "crlf_injected=true") ||
-				strings.Contains(string(body), "X-Custom-Header:Injected") ||
-				strings.Contains(string(body), payload) {
+			if strings.Contains(string(body), "crlf_injected=true") || // Check for injected cookie
+				strings.Contains(string(body), "X-Custom-Header:Injected") || // Check for custom header
+				strings.Contains(string(body), "Content-Length:0") || // Check for content length manipulation
+				strings.Contains(string(body), "Location: https://evil.com") || // Check for malicious redirect
+				strings.Contains(string(body), "Refresh: 5;url=https://evil.com") || // Check for refresh header
+				strings.Contains(string(body), "Content-Disposition: attachment") || // Check for content-disposition
+				strings.Contains(string(body), "<script>alert('Injected')</script>") || // Check for script injection
+				strings.Contains(string(body), "HTTP/1.1 200 OK") || // Check for fake HTTP response
+				strings.Contains(string(body), "<html><body>Injected</body></html>") || // Check for injected HTML
+				strings.Contains(string(body), "X-Injected-Header: test") || // Check for custom injected header
+				strings.Contains(string(body), "{\"injected\":\"json\"}") || // Check for injected JSON
+				strings.Contains(string(body), "{\"status\":\"200 OK\"}") || // Check for fake JSON response
+				strings.Contains(string(body), "{\"error\":\"CRLF Injection\"}") || // Check for error message
+				strings.Contains(string(body), payload) { // General check for payload
 				findings = append(findings, fmt.Sprintf(
 					"Vulnerable URL: %s\n  Payload: %s\n  Response contains injected content.\n",
 					testURL, payload,
